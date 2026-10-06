@@ -41,7 +41,7 @@ export function ProcessPage(props: ProcessPageProps) {
     from: owner,
     type,
     //
-    ingestedAt,
+    timestamp,
     tags,
     userTags,
     systemTags,
@@ -159,13 +159,13 @@ export function ProcessPage(props: ProcessPageProps) {
             />
             {tags.Name && <SectionInfo title="Name" value={<IdBlock label={tags.Name} />} />}
             <SectionInfo
-              title="Seen at"
+              title="Timestamp"
               value={
-                ingestedAt === null ? (
-                  "Processing"
+                timestamp === null ? (
+                  "Unknown"
                 ) : (
-                  <Tooltip title={formatFullDate(ingestedAt)}>
-                    <span>{formatRelative(ingestedAt)}</span>
+                  <Tooltip title={formatFullDate(timestamp)}>
+                    <span>{formatRelative(timestamp)}</span>
                   </Tooltip>
                 )
               }

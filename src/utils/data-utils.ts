@@ -47,6 +47,11 @@ export const TYPE_PATH_MAP: Record<string, string> = {
   Block: "block",
   Entity: "entity",
   Token: "token",
-  ArNS: "arns",
   User: "entity",
+}
+
+export function getAoMessagePath(message: { id: string; type?: string }): string {
+  const type = message.type?.toLowerCase()
+  const route = type === "process" ? "entity" : type === "module" ? "module" : type === "swap" ? "swap" : "message"
+  return `/${route}/${message.id}`
 }

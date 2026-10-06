@@ -17,7 +17,7 @@ export function TypeBadge(props: TypeBadgeProps) {
         direction="row"
         gap={1}
         sx={{
-          background: TYPE_COLOR_MAP[type],
+          background: TYPE_COLOR_MAP[type] || TYPE_COLOR_MAP.Entity,
           padding: "4px 8px",
           width: "fit-content",
         }}

@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - run: npm ci --prefer-offline --no-audit
+      - run: npm ci --before="$(date -u -d '30 days ago' +%Y-%m-%d)" --ignore-scripts --prefer-offline --no-audit
       - run: npm run lint
       - run: npm run check-types
       - run: npm test --if-present
@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci --prefer-offline --no-audit
+      - run: npm ci --before="$(date -u -d '30 days ago' +%Y-%m-%d)" --ignore-scripts --prefer-offline --no-audit
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:

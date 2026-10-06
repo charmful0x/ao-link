@@ -2,7 +2,6 @@ import { Box, Container, Link, Stack, Typography } from "@mui/material"
 import React from "react"
 
 import { AutonomousFinanceLogo } from "./AutonomousFinanceLogo"
-import { GoldSkyLogo } from "./GoldSkyLogo"
 
 export function Footer() {
   return (
@@ -177,21 +176,6 @@ export function Footer() {
               variant="body2"
             >
               <AutonomousFinanceLogo />
-            </Link>
-            <Link
-              href="https://goldsky.com"
-              target="_blank"
-              sx={{
-                color: "rgb(180, 180, 180)",
-                "&:hover": {
-                  color: "#FFF",
-                },
-              }}
-              fontWeight={500}
-              underline="none"
-              variant="body2"
-            >
-              <GoldSkyLogo />
             </Link>
           </Stack>
         </Stack>

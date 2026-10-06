@@ -120,11 +120,11 @@ export function EvalMessagesTableRow(props: EvalMessagesTableRowProps) {
           )}
         </TableCell>
         <TableCell align="right">
-          {message.ingestedAt === null ? (
-            "Processing"
+          {message.timestamp === null ? (
+            "Unknown"
           ) : (
-            <Tooltip title={formatFullDate(message.ingestedAt)}>
-              <span>{formatRelative(message.ingestedAt)}</span>
+            <Tooltip title={formatFullDate(message.timestamp)}>
+              <span>{formatRelative(message.timestamp)}</span>
             </Tooltip>
           )}
         </TableCell>

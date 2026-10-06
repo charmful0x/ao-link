@@ -2,7 +2,7 @@ import { result } from "@permaweb/aoconnect/browser"
 import { MessageResult } from "@permaweb/aoconnect/dist/lib/result"
 import { gql } from "urql"
 
-import { goldsky } from "./graphql-client"
+import { graphqlClient } from "./graphql-client"
 import { AoMessage, NetworkStat, TokenTransferMessage, TransactionsResponse } from "@/types"
 
 import { messageFields, parseAoMessage, parseTokenEvent } from "@/utils/arweave-utils"
@@ -13,7 +13,11 @@ import { isArweaveId } from "@/utils/utils"
 // const AO_NETWORK_IDENTIFIER = '{ name: "Variant", values: ["ao.TN.1"] }'
 const AO_NETWORK_IDENTIFIER = '{ name: "Data-Protocol", values: ["ao"] }'
 
-const AO_MIN_INGESTED_AT = "ingested_at: { min: 1696107600 }"
+function parseTransactionCount(value: string | number | null | undefined): number | undefined {
+  if (value == null) return undefined
+  const count = Number(value)
+  return Number.isFinite(count) && count >= 0 ? count : undefined
+}
 
 /**
  * WARN This query fails if both count and cursor are set
@@ -29,7 +33,6 @@ const outgoingMessagesQuery = (includeCount = false, isProcess?: boolean) => gql
       sort: $sortOrder
       first: $limit
       after: $cursor
-      ${AO_MIN_INGESTED_AT}
       ${
         isProcess
           ? `tags: [{ name: "From-Process", values: [$entityId] }, ${AO_NETWORK_IDENTIFIER}]`
@@ -54,10 +57,10 @@ export async function getOutgoingMessages(
   isProcess?: boolean,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(outgoingMessagesQuery(!cursor, isProcess), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         entityId,
@@ -70,7 +73,7 @@ export async function getOutgoingMessages(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -93,7 +96,6 @@ const incomingMessagesQuery = (includeCount = false) => gql`
 
       recipients: [$entityId]
       tags: [${AO_NETWORK_IDENTIFIER}]
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -111,10 +113,10 @@ export async function getIncomingMessages(
   entityId: string,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(incomingMessagesQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         entityId,
@@ -127,7 +129,7 @@ export async function getIncomingMessages(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -147,7 +149,6 @@ const tokenTransfersQuery = (includeCount = false) => gql`
 
       tags: [{ name: "Action", values: ["Credit-Notice", "Debit-Notice"] }, ${AO_NETWORK_IDENTIFIER}]
       recipients: [$entityId]
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -165,10 +166,10 @@ export async function getTokenTransfers(
   entityId: string,
 ): Promise<[number | undefined, TokenTransferMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(tokenTransfersQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         entityId,
@@ -181,7 +182,7 @@ export async function getTokenTransfers(
     const { count, edges } = data.transactions
     const events = edges.map(parseTokenEvent)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -202,7 +203,6 @@ const spawnedProcessesQuery = (includeCount = false, isProcess?: boolean) => gql
       first: $limit
       after: $cursor
 
-      ${AO_MIN_INGESTED_AT}
       ${
         isProcess
           ? `tags: [{ name: "From-Process", values: [$entityId]}, { name: "Type", values: ["Process"]}, ${AO_NETWORK_IDENTIFIER}]`
@@ -227,10 +227,10 @@ export async function getSpawnedProcesses(
   isProcess?: boolean,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(spawnedProcessesQuery(!cursor, isProcess), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         entityId,
@@ -243,7 +243,7 @@ export async function getSpawnedProcesses(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -253,11 +253,11 @@ export async function getMessageById(id: string): Promise<AoMessage | null> {
   if (!isArweaveId(id)) {
     return null
   }
-  const { data, error } = await goldsky
+  const { data, error } = await graphqlClient
     .query<TransactionsResponse>(
       gql`
         query ($id: ID!) {
-          transactions(ids: [$id], tags: [${AO_NETWORK_IDENTIFIER}], ${AO_MIN_INGESTED_AT}) {
+          transactions(ids: [$id], tags: [${AO_NETWORK_IDENTIFIER}]) {
             ...MessageFields
           }
         }
@@ -286,7 +286,6 @@ const processesQuery = (includeCount = false) => gql`
       first: $limit
       after: $cursor
       tags: $tags
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -312,10 +311,10 @@ export async function getProcesses(
       tags.push({ name: "Module", values: [moduleId] })
     }
 
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(processesQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         tags,
       })
@@ -327,7 +326,7 @@ export async function getProcesses(
     const { count, edges } = data.transactions
     const records = edges.map(parseAoMessage)
 
-    return [count, records]
+    return [parseTransactionCount(count), records]
   } catch (error) {
     return [0, []]
   }
@@ -348,7 +347,6 @@ const modulesQuery = (includeCount = false) => gql`
       after: $cursor
 
       tags: [{ name: "Type", values: ["Module"]}, ${AO_NETWORK_IDENTIFIER}]
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -365,10 +363,10 @@ export async function getModules(
   //
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(modulesQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
       })
@@ -380,7 +378,7 @@ export async function getModules(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -388,7 +386,6 @@ export async function getModules(
 
 /**
  * WARN This query fails if both count and cursor are set
-// $messageId: String!
  */
 const resultingMessagesQuery = (includeCount = false, useOldRefSymbol = false) => gql`
   query (
@@ -404,7 +401,6 @@ const resultingMessagesQuery = (includeCount = false, useOldRefSymbol = false) =
       after: $cursor
 
       tags: [{ name: "${useOldRefSymbol ? "Ref_" : "Reference"}", values: $msgRefs },{ name: "From-Process", values: [$fromProcessId] }, ${AO_NETWORK_IDENTIFIER}]
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -419,19 +415,17 @@ export async function getResultingMessages(
   ascending: boolean,
   //
   pushedFor: string,
-  sender?: string,
+  sender: string,
   msgRefs?: string[],
   useOldRefSymbol = false,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(resultingMessagesQuery(!cursor, useOldRefSymbol), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
-        //
-        // messageId: pushedFor,
-        msgRefs: msgRefs || [],
+        msgRefs: msgRefs?.filter(Boolean).length ? msgRefs.filter(Boolean) : [pushedFor],
         fromProcessId: sender,
       })
       .toPromise()
@@ -442,33 +436,16 @@ export async function getResultingMessages(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
 }
 
-const listToStr = (strs: string[]): string => {
-  return strs.reduce((str, next, index) => {
-    return str + `"${next}"${index < strs.length - 1 ? ", " : ""}`
-  }, "")
-}
-
-interface ResultingMessagesIdsQueryArgs {
-  recipient: string
-  actions?: string[]
-  fromProcess?: string
-  useOldRefSymbol: boolean
-}
-
-const resultingMessagesIdsQuery = ({
-  recipient,
-  actions = [],
-  fromProcess,
-  useOldRefSymbol = false,
-}: ResultingMessagesIdsQueryArgs) => gql`
+const resultingMessagesIdsQuery = gql`
   query (
-    $msgRefs: [String!]!
+    $recipient: String!
+    $tags: [TagFilter!]!
     $limit: Int!
     $sortOrder: SortOrder!
     $cursor: String
@@ -477,13 +454,8 @@ const resultingMessagesIdsQuery = ({
       sort: $sortOrder
       first: $limit
       after: $cursor
-      recipients: ["${recipient}"]
-      tags: [
-        { name: "${useOldRefSymbol ? "Ref_" : "Reference"}", values: $msgRefs },
-        ${fromProcess ? `{ "From-Process": "${fromProcess}" }` : ""}
-        ${actions.length > 0 ? `{ name: "Action", values: [${listToStr(actions)}] }` : ""}
-      ]
-      ${AO_MIN_INGESTED_AT}
+      recipients: [$recipient]
+      tags: $tags
     ) {
       ...MessageFields
     }
@@ -513,16 +485,21 @@ export const getResultingMessagesNodes = async ({
   msgRefs,
   useOldRefSymbol = false,
 }: GetResultingMessagesNodesArgs) => {
-  const result = await goldsky
-    .query<TransactionsResponse>(
-      resultingMessagesIdsQuery({ recipient, actions, fromProcess, useOldRefSymbol }),
-      {
-        limit,
-        cursor,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
-        msgRefs: msgRefs || [],
-      },
-    )
+  const tags = [
+    { name: useOldRefSymbol ? "Ref_" : "Reference", values: msgRefs || [] },
+    { name: "Data-Protocol", values: ["ao"] },
+  ]
+  if (fromProcess) tags.push({ name: "From-Process", values: [fromProcess] })
+  if (actions?.length) tags.push({ name: "Action", values: actions })
+
+  const result = await graphqlClient
+    .query<TransactionsResponse>(resultingMessagesIdsQuery, {
+      recipient,
+      tags,
+      limit,
+      cursor,
+      sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
+    })
     .toPromise()
 
   const { data } = result
@@ -550,7 +527,6 @@ const linkedMessagesQuery = (includeCount = false) => gql`
       after: $cursor
 
       tags: [{ name: "Pushed-For", values: [$messageId] }, ${AO_NETWORK_IDENTIFIER}]
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -568,10 +544,10 @@ export async function getLinkedMessages(
   pushedFor: string,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(linkedMessagesQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         messageId: pushedFor,
@@ -584,7 +560,7 @@ export async function getLinkedMessages(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -607,7 +583,6 @@ const messagesForBlockQuery = (includeCount = false) => gql`
 
       block: { min: $blockHeight, max: $blockHeight }
       tags: [${AO_NETWORK_IDENTIFIER}]
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -625,10 +600,10 @@ export async function getMessagesForBlock(
   blockHeight?: number,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(messagesForBlockQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         blockHeight,
@@ -641,7 +616,7 @@ export async function getMessagesForBlock(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -653,7 +628,6 @@ const allMessagesQuery = gql`
       sort: $sortOrder
       first: $limit
       after: $cursor
-      ${AO_MIN_INGESTED_AT}
 
       tags: $tags
     ) {
@@ -686,10 +660,10 @@ export async function getAllMessages(
   }
 
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(allMessagesQuery, {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         tags,
@@ -702,7 +676,7 @@ export async function getAllMessages(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -725,7 +699,6 @@ const evalMessagesQuery = (includeCount = false) => gql`
 
       tags: [{ name: "Action", values: ["Eval"] }, ${AO_NETWORK_IDENTIFIER}]
       recipients: [$entityId]
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -743,10 +716,10 @@ export async function getEvalMessages(
   entityId: string,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(evalMessagesQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         entityId,
@@ -759,7 +732,7 @@ export async function getEvalMessages(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -783,7 +756,7 @@ const networkStatsQuery = gql`
 
 export async function getNetworkStats(): Promise<NetworkStat[]> {
   try {
-    const result = await goldsky.query<TransactionsResponse>(networkStatsQuery, {}).toPromise()
+    const result = await graphqlClient.query<TransactionsResponse>(networkStatsQuery, {}).toPromise()
     if (!result.data) return []
 
     const { edges } = result.data.transactions
@@ -817,7 +790,6 @@ const ownedDomainsQuery = (includeCount = false) => gql`
       tags: [${AO_NETWORK_IDENTIFIER}, { name: "Action", values: ["Buy-Record-Notice"]}]
       recipients: [$entityId]
      
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -835,10 +807,10 @@ export async function getOwnedDomainsHistory(
   entityId: string,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(ownedDomainsQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         entityId,
@@ -851,7 +823,7 @@ export async function getOwnedDomainsHistory(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }
@@ -875,7 +847,6 @@ const setRecordsQuery = (includeCount = false) => gql`
       tags: [${AO_NETWORK_IDENTIFIER}, { name: "Action", values: ["Set-Record"] }, { name: "Transaction-Id", values: [$entityId]}]
       owners: [$entityId]
      
-      ${AO_MIN_INGESTED_AT}
     ) {
       ${includeCount ? "count" : ""}
       ...MessageFields
@@ -893,10 +864,10 @@ export async function getSetRecordsToEntityId(
   entityId: string,
 ): Promise<[number | undefined, AoMessage[]]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<TransactionsResponse>(setRecordsQuery(!cursor), {
         limit,
-        sortOrder: ascending ? "HEIGHT_ASC" : "INGESTED_AT_DESC",
+        sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",
         cursor,
         //
         entityId,
@@ -909,7 +880,7 @@ export async function getSetRecordsToEntityId(
     const { count, edges } = data.transactions
     const events = edges.map(parseAoMessage)
 
-    return [count, events]
+    return [parseTransactionCount(count), events]
   } catch (error) {
     return [0, []]
   }

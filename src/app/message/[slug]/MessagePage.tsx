@@ -158,7 +158,7 @@ export function MessagePage() {
     )
   }
 
-  const { from, type, blockHeight, ingestedAt, to, systemTags, userTags } = message
+  const { from, type, blockHeight, timestamp, to, systemTags, userTags } = message
 
   if (type === "Process") {
     return <Navigate to={`/entity/${messageId}`} />
@@ -216,13 +216,13 @@ export function MessagePage() {
                 }
               />
               <SectionInfo
-                title="Seen at"
+                title="Timestamp"
                 value={
-                  ingestedAt === null ? (
-                    "Processing"
+                  timestamp === null ? (
+                    "Unknown"
                   ) : (
-                    <Tooltip title={formatFullDate(ingestedAt)}>
-                      <span>{formatRelative(ingestedAt)}</span>
+                    <Tooltip title={formatFullDate(timestamp)}>
+                      <span>{formatRelative(timestamp)}</span>
                     </Tooltip>
                   )
                 }

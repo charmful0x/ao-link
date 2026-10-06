@@ -20,7 +20,7 @@ import { InOutLabel } from "@/components/InOutLabel"
 import { TableEntityBlock } from "@/components/TableEntityBlock"
 import { TypeBadge } from "@/components/TypeBadge"
 import { AoMessage, MSG_TYPES } from "@/types"
-import { TYPE_ICON_MAP, TYPE_PATH_MAP, truncateId } from "@/utils/data-utils"
+import { getAoMessagePath, TYPE_ICON_MAP, truncateId } from "@/utils/data-utils"
 import { formatFullDate, formatRelative } from "@/utils/date-utils"
 import { formatNumber } from "@/utils/number-utils"
 
@@ -106,11 +106,11 @@ export function EntityMessagesTable(props: EntityMessagesTableProps) {
       align: "right",
     },
     {
-      field: "ingestedAt" satisfies keyof AoMessage,
+      field: "timestamp" satisfies keyof AoMessage,
       label: (
         <Stack direction="row" gap={0.5} alignItems="center">
-          Seen at
-          <Tooltip title="Time when the message was seen by the Arweave network (ingested_at).">
+          Timestamp
+          <Tooltip title="Arweave block time, or the message's Timestamp tag when block time is unavailable. Results are ordered by block height.">
             <Info width={16} height={16} />
           </Tooltip>
         </Stack>
@@ -132,15 +132,16 @@ export function EntityMessagesTable(props: EntityMessagesTableProps) {
       {...rest}
       component={Paper}
       initialSortDir="desc"
-      initialSortField="ingestedAt"
+      initialSortField="timestamp"
       headerCells={headerCells}
       renderRow={(item: AoMessage) => {
+        const path = getAoMessagePath(item)
         return (
           <TableRow
             sx={{ cursor: "pointer" }}
             key={item.id}
             onClick={() => {
-              navigate(`/${TYPE_PATH_MAP[item.type]}/${item.id}`)
+              navigate(path)
             }}
           >
             <TableCell>
@@ -150,7 +151,7 @@ export function EntityMessagesTable(props: EntityMessagesTableProps) {
               <IdBlock
                 label={truncateId(item.id)}
                 value={item.id}
-                href={`/${TYPE_PATH_MAP[item.type]}/${item.id}`}
+                href={path}
               />
             </TableCell>
             <TableCell>{item.action}</TableCell>
@@ -177,11 +178,11 @@ export function EntityMessagesTable(props: EntityMessagesTableProps) {
               </TableCell>
             )}
             <TableCell align="right">
-              {item.ingestedAt === null ? (
-                "Processing"
+              {item.timestamp === null ? (
+                "Unknown"
               ) : (
-                <Tooltip title={formatFullDate(item.ingestedAt)}>
-                  <span>{formatRelative(item.ingestedAt)}</span>
+                <Tooltip title={formatFullDate(item.timestamp)}>
+                  <span>{formatRelative(item.timestamp)}</span>
                 </Tooltip>
               )}
             </TableCell>

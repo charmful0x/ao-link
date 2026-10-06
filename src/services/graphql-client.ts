@@ -1,12 +1,7 @@
 import { Client, cacheExchange, fetchExchange } from "urql"
-import { GATEWAY_GRAPHQL } from "@/config/gateway"
+import { getGraphqlEndpoint } from "@/config/gateway"
 
-export const goldsky = new Client({
-  url: GATEWAY_GRAPHQL,
+export const graphqlClient = new Client({
+  url: getGraphqlEndpoint(),
   exchanges: [cacheExchange, fetchExchange],
 })
-
-// export const arweaveNet = new Client({
-//   url: "https://arweave.net/graphql",
-//   exchanges: [cacheExchange, fetchExchange],
-// })

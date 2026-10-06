@@ -9,7 +9,7 @@ import { AsyncTable, AsyncTableProps } from "@/components/AsyncTable"
 import { IdBlock } from "@/components/IdBlock"
 import { TypeBadge } from "@/components/TypeBadge"
 import { AoMessage } from "@/types"
-import { TYPE_PATH_MAP, truncateId } from "@/utils/data-utils"
+import { truncateId } from "@/utils/data-utils"
 import { formatFullDate, formatRelative } from "@/utils/date-utils"
 import { formatNumber } from "@/utils/number-utils"
 
@@ -23,7 +23,7 @@ export function ModulesTable(props: ModulesTableProps) {
       {...props}
       component={Paper}
       initialSortDir="desc"
-      initialSortField="ingestedAt"
+      initialSortField="timestamp"
       headerCells={[
         { label: "Type", sx: { width: 140 } },
         { label: "ID", sx: { width: 240 } },
@@ -36,11 +36,11 @@ export function ModulesTable(props: ModulesTableProps) {
           align: "right",
         },
         {
-          field: "ingestedAt" satisfies keyof AoMessage,
+          field: "timestamp" satisfies keyof AoMessage,
           label: (
             <Stack direction="row" gap={0.5} alignItems="center">
-              Seen at
-              <Tooltip title="Time when the message was seen by the Arweave network (ingested_at).">
+              Timestamp
+              <Tooltip title="Arweave block time, or the message's Timestamp tag when block time is unavailable. Results are ordered by block height.">
                 <Info width={16} height={16} />
               </Tooltip>
             </Stack>
@@ -55,7 +55,7 @@ export function ModulesTable(props: ModulesTableProps) {
           sx={{ cursor: "pointer" }}
           key={item.id}
           onClick={() => {
-            navigate(`/${TYPE_PATH_MAP[item.type]}/${item.id}`)
+            navigate(`/module/${item.id}`)
           }}
         >
           <TableCell>
@@ -85,11 +85,11 @@ export function ModulesTable(props: ModulesTableProps) {
             )}
           </TableCell>
           <TableCell align="right">
-            {item.ingestedAt === null ? (
-              "Processing"
+            {item.timestamp === null ? (
+              "Unknown"
             ) : (
-              <Tooltip title={formatFullDate(item.ingestedAt)}>
-                <span>{formatRelative(item.ingestedAt)}</span>
+              <Tooltip title={formatFullDate(item.timestamp)}>
+                <span>{formatRelative(item.timestamp)}</span>
               </Tooltip>
             )}
           </TableCell>

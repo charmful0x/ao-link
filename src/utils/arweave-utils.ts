@@ -9,7 +9,6 @@ export const messageFields = gql`
       cursor
       node {
         id
-        ingested_at
         recipient
         block {
           timestamp
@@ -49,36 +48,73 @@ export const systemTagNames = [
   "Name",
 ]
 
-export function parseAoMessage(edge: TransactionEdge): AoMessage {
-  const { node, cursor } = edge
+// HyperBEAM may project message keys in lowercase when original ANS-104 tags
+// are unavailable. Restore names used throughout the explorer.
+const canonicalTagNames = new Map(
+  [
+    ...systemTagNames,
+    "Action",
+    "Quantity",
+    "Recipient",
+    "Sender",
+    "Transaction-Id",
+    "Memory-Limit",
+    "Compute-Limit",
+    "Input-Encoding",
+    "Output-Encoding",
+    "Module-Format",
+    "Forwarded-For",
+    "Timestamp",
+  ].map((name) => [name.toLowerCase(), name]),
+)
 
+function partitionTags(rawTags: Tag[]) {
   const systemTags: Record<string, string> = {}
   const userTags: Record<string, string> = {}
   const tags: Record<string, string> = {}
 
-  node.tags.forEach((tag) => {
-    tags[tag.name] = tag.value
-
-    if (systemTagNames.includes(tag.name)) {
-      systemTags[tag.name] = tag.value
-    } else {
-      userTags[tag.name] = tag.value
-    }
+  rawTags.forEach((tag) => {
+    const name = canonicalTagNames.get(tag.name.toLowerCase()) || tag.name
+    tags[name] = tag.value
+    if (systemTagNames.includes(name)) systemTags[name] = tag.value
+    else userTags[name] = tag.value
   })
 
-  // delete systemTags["Pushed-For"]
-  // delete systemTags["Data-Protocol"]
   delete systemTags["Type"]
   delete systemTags["Module"]
   delete systemTags["Name"]
 
-  const type = tags["Type"] as AoMessage["type"]
+  return { systemTags, userTags, tags }
+}
+
+function parseMessageTimestamp(value?: string): Date | null {
+  if (!value || !/^\d{10,13}$/.test(value)) return null
+  const raw = Number(value)
+  const date = new Date(raw < 100_000_000_000 ? raw * 1000 : raw)
+  return Number.isFinite(date.getTime()) ? date : null
+}
+
+const knownTypes: Record<string, string> = {
+  message: "Message",
+  process: "Process",
+  module: "Module",
+  checkpoint: "Checkpoint",
+  assignment: "Assignment",
+  swap: "Swap",
+}
+
+export function parseAoMessage(edge: TransactionEdge): AoMessage {
+  const { node, cursor } = edge
+  const { systemTags, userTags, tags } = partitionTags(node.tags)
+
+  const rawType = tags["Type"] || "Unknown"
+  const type = knownTypes[rawType.toLowerCase()] || rawType
   const blockHeight = node.block ? node.block.height : null
   const from = tags["Forwarded-For"] || tags["From-Process"] || node.owner.address
   const schedulerId = tags["Scheduler"]
   const action = tags["Action"]
-  const blockTimestamp = node.block ? new Date(node.block.timestamp * 1000) : null
-  const ingestedAt = new Date(node.ingested_at * 1000)
+  const blockTimestamp = node.block?.timestamp ? new Date(node.block.timestamp * 1000) : null
+  const timestamp = blockTimestamp ?? parseMessageTimestamp(tags["Timestamp"])
   const to = node.recipient.trim()
 
   if (type === "Message" && tags["Name"]) {
@@ -93,20 +129,20 @@ export function parseAoMessage(edge: TransactionEdge): AoMessage {
     blockHeight,
     schedulerId,
     blockTimestamp,
-    ingestedAt,
+    timestamp,
     action,
     tags,
     systemTags,
     userTags,
     cursor,
-    dataSize: node.data?.size,
+    dataSize: node.data?.size == null ? undefined : Number(node.data.size),
   }
 }
 
 export function parseTokenEvent(edge: TransactionEdge): TokenTransferMessage {
   const aoMessage = parseAoMessage(edge)
 
-  const { id, ingestedAt, action, from, to, tags } = aoMessage
+  const { id, timestamp, action, from, to, tags } = aoMessage
 
   let sender
   let recipient
@@ -136,7 +172,7 @@ export function parseTokenEvent(edge: TransactionEdge): TokenTransferMessage {
     id,
     type: "Message",
     cursor: edge.cursor,
-    ingestedAt,
+    timestamp,
     action,
     sender,
     recipient,
@@ -183,31 +219,5 @@ export type CuMessage = {
 }
 
 export function parseAoMessageFromCU(message: Message): CuMessage {
-  const systemTags: Record<string, string> = {}
-  const userTags: Record<string, string> = {}
-  const tags: Record<string, string> = {}
-
-  message.Tags.forEach((tag) => {
-    tags[tag.name] = tag.value
-
-    if (systemTagNames.includes(tag.name)) {
-      systemTags[tag.name] = tag.value
-    } else {
-      userTags[tag.name] = tag.value
-    }
-  })
-
-  // delete systemTags["Pushed-For"]
-  // delete systemTags["Data-Protocol"]
-  delete systemTags["Type"]
-  delete systemTags["Module"]
-  delete systemTags["Name"]
-
-  return {
-    // to: message.Target,
-    // action: tags["Action"],
-    systemTags,
-    userTags,
-    tags,
-  }
+  return partitionTags(message.Tags)
 }

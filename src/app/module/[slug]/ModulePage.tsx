@@ -77,13 +77,13 @@ export function ModulePage() {
           <Stack gap={4}>
             <SectionInfoWithChip title="Type" value={"Module"} />
             <SectionInfo
-              title="Seen at"
+              title="Timestamp"
               value={
-                message.ingestedAt === null ? (
-                  "Processing"
+                message.timestamp === null ? (
+                  "Unknown"
                 ) : (
-                  <Tooltip title={formatFullDate(message.ingestedAt)}>
-                    <span>{formatRelative(message.ingestedAt)}</span>
+                  <Tooltip title={formatFullDate(message.timestamp)}>
+                    <span>{formatRelative(message.timestamp)}</span>
                   </Tooltip>
                 )
               }

@@ -11,7 +11,7 @@ import { TokenBlock } from "@/components/TokenBlock"
 import { TypeBadge } from "@/components/TypeBadge"
 import { TokenInfo, getTokenInfo } from "@/services/token-api"
 import { TokenTransferMessage } from "@/types"
-import { TYPE_PATH_MAP, truncateId } from "@/utils/data-utils"
+import { truncateId } from "@/utils/data-utils"
 import { formatFullDate, formatRelative } from "@/utils/date-utils"
 import { nativeTokenInfo } from "@/utils/native-token"
 
@@ -41,7 +41,7 @@ export function TokenTransfersTableRow(props: TokenTransfersTableRowProps) {
       sx={{ cursor: "pointer" }}
       key={item.id}
       onClick={() => {
-        navigate(`/${TYPE_PATH_MAP[item.type]}/${item.id}`)
+        navigate(`/message/${item.id}`)
       }}
     >
       <TableCell>
@@ -83,9 +83,13 @@ export function TokenTransfersTableRow(props: TokenTransfersTableRowProps) {
         </span>
       </TableCell>
       <TableCell align="right">
-        <Tooltip title={formatFullDate(item.ingestedAt)}>
-          <span>{formatRelative(item.ingestedAt)}</span>
-        </Tooltip>
+        {item.timestamp === null ? (
+          "-"
+        ) : (
+          <Tooltip title={formatFullDate(item.timestamp)}>
+            <span>{formatRelative(item.timestamp)}</span>
+          </Tooltip>
+        )}
       </TableCell>
     </TableRow>
   )

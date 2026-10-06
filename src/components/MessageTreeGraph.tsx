@@ -446,7 +446,7 @@ export function MessageTreeGraph({
             </div>
             {tooltip.data.result?.error && <div>Error: {tooltip.data.result.error}</div>}
             <div>Action: {tooltip.data.tags["Action"] ?? ""}</div>
-            <div>Timestamp: {new Date(tooltip.data.ingestedAt).toLocaleString()}</div>
+            <div>Timestamp: {tooltip.data.timestamp?.toLocaleString() ?? "Unknown"}</div>
             <div>Block Height: {tooltip.data.blockHeight}</div>
             <div>Tags:</div>
             {Object.entries(tooltip.data.tags || {}).map(([key, value]) => (

@@ -23,22 +23,10 @@ import { getTokenInfo } from "@/services/token-api"
 import { TYPE_PATH_MAP } from "@/utils/data-utils"
 import { isArweaveId } from "@/utils/utils"
 
-type ResultType =
-  | "Message"
-  | "Entity"
-  | "Block"
-  | "Checkpoint"
-  | "Assignment"
-  | "Process"
-  | "Token"
-  | "Swap"
-  | "ArNS"
-  | "User"
-
 type Result = {
   label: string
   id: string
-  type: ResultType
+  type: string
 }
 
 async function findByText(text: string, abortSignal?: AbortSignal): Promise<Result[]> {
@@ -69,7 +57,7 @@ async function findByText(text: string, abortSignal?: AbortSignal): Promise<Resu
     }) : Promise.resolve(null)
   ])
 
-  const results = []
+  const results: Result[] = []
 
   if (msg && msg.type) {
     results.push({
@@ -91,7 +79,7 @@ async function findByText(text: string, abortSignal?: AbortSignal): Promise<Resu
     results.push({
       label: text,
       id: text,
-      type: "Token" as ResultType,
+      type: "Token",
     })
   }
 
@@ -99,7 +87,7 @@ async function findByText(text: string, abortSignal?: AbortSignal): Promise<Resu
     results.push({
       label: text,
       id: text,
-      type: "Entity" as ResultType,
+      type: "Entity",
     })
   }
 
@@ -108,7 +96,7 @@ async function findByText(text: string, abortSignal?: AbortSignal): Promise<Resu
     results.push({
       label: `${text} (ArNS Management)`,
       id: text,
-      type: "ArNS" as ResultType,
+      type: "ArNS",
     })
     
     // 2. User result - the owner of the ArNS name
@@ -116,7 +104,7 @@ async function findByText(text: string, abortSignal?: AbortSignal): Promise<Resu
       results.push({
         label: `${arnsResolution.owner} (ArNS Owner)`,
         id: arnsResolution.owner,
-        type: "User" as ResultType,
+        type: "User",
       })
     }
     
@@ -125,7 +113,7 @@ async function findByText(text: string, abortSignal?: AbortSignal): Promise<Resu
       results.push({
         label: `${arnsResolution.processId} (ANT Process)`,
         id: arnsResolution.processId,
-        type: "Process" as ResultType,
+        type: "Process",
       })
     }
   }
@@ -250,7 +238,7 @@ const SearchBar = () => {
             if (newValue.type === "ArNS") {
               window.open(`https://arns.ar.io/#/manage/names/${newValue.id}`, '_blank')
             } else {
-              navigate(`/${TYPE_PATH_MAP[newValue.type]}/${newValue.id}`)
+              navigate(`/${TYPE_PATH_MAP[newValue.type] || "message"}/${newValue.id}`)
             }
             
             document.getElementById("search-bar")?.blur()
@@ -281,7 +269,7 @@ const SearchBar = () => {
         filterOptions={(x) => x}
         renderInput={(params) => (
           <TextField
-            placeholder="Search by Message ID / Process ID / User ID / Block Height / ArNS name"
+            placeholder="Search by Message ID / Process ID / User ID / Block Height"
             sx={{
               background: "var(--mui-palette-background-default) !important",
               "& fieldset": {

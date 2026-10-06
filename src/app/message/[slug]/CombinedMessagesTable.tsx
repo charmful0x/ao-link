@@ -40,7 +40,7 @@ function BaseCombinedTable(props: Props) {
       component="div"
       pageSize={pageSize}
       initialSortDir="desc"
-      initialSortField="ingestedAt"
+      initialSortField="timestamp"
       headerCells={[
         { label: "Dir", sx: { width: 40 } },
         { label: "ID", sx: { width: 240 } },
@@ -116,7 +116,7 @@ function BaseCombinedTable(props: Props) {
               <TypeBadge type={row.type} />
             </TableCell>
             <TableCell align="right">
-              {row.ingestedAt ? formatRelative(row.ingestedAt) : "-"}
+              {row.timestamp ? formatRelative(row.timestamp) : "-"}
             </TableCell>
           </TableRow>
         )

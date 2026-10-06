@@ -13,7 +13,7 @@ interface Props {
 
 export default function TransactionHero(props: Props) {
   const { message, pushedFor } = props
-  const { id, type, from, to, blockHeight, ingestedAt } = message
+  const { id, type, from, to, blockHeight, timestamp } = message
 
   return (
     <Paper
@@ -68,14 +68,14 @@ export default function TransactionHero(props: Props) {
 
       <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
         <Typography variant="caption" color="text.secondary">
-          Seen
+          Time
         </Typography>
-        {ingestedAt ? (
-          <Tooltip title={formatFullDate(ingestedAt)}>
-            <Typography variant="body2">{formatRelative(ingestedAt)}</Typography>
+        {timestamp ? (
+          <Tooltip title={formatFullDate(timestamp)}>
+            <Typography variant="body2">{formatRelative(timestamp)}</Typography>
           </Tooltip>
         ) : (
-          <Typography variant="body2">Processing</Typography>
+          <Typography variant="body2">Unknown</Typography>
         )}
       </Stack>
 
@@ -93,4 +93,4 @@ export default function TransactionHero(props: Props) {
       )}
     </Paper>
   )
-} 
+}

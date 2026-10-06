@@ -144,7 +144,6 @@ const navItems = [
   { label: "PROCESSES", path: "/processes" },
   { label: "MODULES", path: "/modules" },
   { label: "BLOCKS", path: "/blocks" },
-  { label: "ARNS", path: "/arns" },
 ]
 
 const Header = () => {

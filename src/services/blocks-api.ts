@@ -1,6 +1,6 @@
 import { gql } from "urql"
 
-import { goldsky } from "./graphql-client"
+import { graphqlClient } from "./graphql-client"
 import { ArweaveBlock, BlocksResponse } from "@/types"
 import { parseArweaveBlock } from "@/utils/arweave-utils"
 
@@ -28,7 +28,7 @@ export async function getBlocks(
   ascending: boolean,
 ): Promise<ArweaveBlock[]> {
   try {
-    const result = await goldsky
+    const result = await graphqlClient
       .query<BlocksResponse>(blocksQuery, {
         limit,
         sortOrder: ascending ? "HEIGHT_ASC" : "HEIGHT_DESC",

@@ -8,8 +8,8 @@ import { RetryableMsgCount } from "./RetryableMsgCount"
 import { AsyncTable, AsyncTableProps } from "@/components/AsyncTable"
 import { IdBlock } from "@/components/IdBlock"
 import { TypeBadge } from "@/components/TypeBadge"
-import { AoMessage, ArweaveBlock } from "@/types"
-import { TYPE_PATH_MAP, truncateId } from "@/utils/data-utils"
+import { ArweaveBlock } from "@/types"
+import { truncateId } from "@/utils/data-utils"
 import { formatFullDate, formatRelative } from "@/utils/date-utils"
 import { formatNumber } from "@/utils/number-utils"
 
@@ -23,7 +23,7 @@ function BaseBlocksTable(props: BlocksTableProps) {
       {...props}
       component={Paper}
       initialSortDir="desc"
-      initialSortField="ingestedAt"
+      initialSortField="timestamp"
       headerCells={[
         { label: "Type", sx: { width: 140 } },
         { label: "ID", sx: { width: 240 } },
@@ -34,11 +34,11 @@ function BaseBlocksTable(props: BlocksTableProps) {
           align: "right",
         },
         {
-          field: "ingestedAt" satisfies keyof AoMessage,
+          field: "timestamp" satisfies keyof ArweaveBlock,
           label: (
             <Stack direction="row" gap={0.5} alignItems="center">
-              Seen at
-              <Tooltip title="Time when the message was seen by the Arweave network (ingested_at).">
+              Block time
+              <Tooltip title="Timestamp recorded in the Arweave block header.">
                 <Info width={16} height={16} />
               </Tooltip>
             </Stack>
@@ -53,7 +53,7 @@ function BaseBlocksTable(props: BlocksTableProps) {
           sx={{ cursor: "pointer" }}
           key={item.id}
           onClick={() => {
-            navigate(`/${TYPE_PATH_MAP["Block"]}/${item.height}`)
+            navigate(`/block/${item.height}`)
           }}
         >
           <TableCell>
@@ -78,7 +78,7 @@ function BaseBlocksTable(props: BlocksTableProps) {
           </TableCell>
           <TableCell align="right">
             {item.timestamp === null ? (
-              "Processing"
+              "Unknown"
             ) : (
               <Tooltip title={formatFullDate(item.timestamp)}>
                 <span>{formatRelative(item.timestamp)}</span>

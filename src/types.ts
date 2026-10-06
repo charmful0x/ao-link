@@ -19,7 +19,6 @@ export type ArweaveBlock = {
 export type TransactionNode = {
   id: string
   anchor?: string
-  ingested_at: number
   signature?: string
   recipient: string
   owner: Owner
@@ -32,11 +31,11 @@ export type TransactionNode = {
     ar: string
   }
   data?: {
-    size?: number
+    size?: string | null
     type?: string
   }
   tags: Tag[]
-  block: BlockEdge["node"]
+  block: BlockEdge["node"] | null
   parent?: {
     id: string
   }
@@ -52,7 +51,7 @@ export type TransactionEdge = {
 
 export type TransactionsResponse = {
   transactions: {
-    count: number | undefined
+    count?: string | number | null
     edges: TransactionEdge[]
   }
 }
@@ -69,7 +68,7 @@ export type BlockEdge = {
     id: string
     height: number
     previous?: string
-    timestamp: number
+    timestamp: number | null
   }
 }
 
@@ -80,7 +79,7 @@ export interface ArweaveTransaction {
   id: string
   blockHeight: number | null
   blockTimestamp: Date | null
-  ingestedAt: Date
+  timestamp: Date | null
   tags: Record<string, string>
   cursor?: string
   dataSize?: number
@@ -90,7 +89,7 @@ export interface AoMessage extends ArweaveTransaction {
   action: string
   to: ArweaveAddress
   from: ArweaveAddress
-  type: (typeof MSG_TYPES)[number]
+  type: string
   schedulerId: string
   systemTags: Record<string, string>
   userTags: Record<string, string>
@@ -103,7 +102,7 @@ export interface AoProcess extends AoMessage {
   type: "Process"
 }
 
-export type TokenTransferMessage = Pick<AoMessage, "id" | "ingestedAt" | "cursor" | "action"> & {
+export type TokenTransferMessage = Pick<AoMessage, "id" | "timestamp" | "cursor" | "action"> & {
   type: "Message"
   sender: ArweaveAddress
   recipient: ArweaveAddress

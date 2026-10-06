@@ -18,7 +18,7 @@ function BaseTokenTransfersTable(props: TokenTransfersTableProps) {
       {...rest}
       component={Paper}
       initialSortDir="desc"
-      initialSortField="ingestedAt"
+      initialSortField="timestamp"
       headerCells={[
         { label: "Type", sx: { width: 140 } },
         // {
@@ -54,11 +54,11 @@ function BaseTokenTransfersTable(props: TokenTransfersTableProps) {
           sx: { width: 240 },
         },
         {
-          field: "ingestedAt" satisfies keyof TokenTransferMessage,
+          field: "timestamp" satisfies keyof TokenTransferMessage,
           label: (
             <Stack direction="row" gap={0.5} alignItems="center">
-              Seen at
-              <Tooltip title="Time when the message was seen by the Arweave network (ingested_at).">
+              Timestamp
+              <Tooltip title="Arweave block time, or the message's Timestamp tag when block time is unavailable. Results are ordered by block height.">
                 <Info width={16} height={16} />
               </Tooltip>
             </Stack>

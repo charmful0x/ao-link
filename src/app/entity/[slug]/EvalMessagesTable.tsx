@@ -31,11 +31,11 @@ function BaseEvalMessagesTable(props: EvalMessagesTableProps) {
       align: "right",
     },
     {
-      field: "ingestedAt" satisfies keyof AoMessage,
+      field: "timestamp" satisfies keyof AoMessage,
       label: (
         <Stack direction="row" gap={0.5} alignItems="center">
-          Seen at
-          <Tooltip title="Time when the message was seen by the Arweave network (ingested_at).">
+          Timestamp
+          <Tooltip title="Arweave block time, or the message's Timestamp tag when block time is unavailable. Results are ordered by block height.">
             <Info width={16} height={16} />
           </Tooltip>
         </Stack>
@@ -52,7 +52,7 @@ function BaseEvalMessagesTable(props: EvalMessagesTableProps) {
       {...rest}
       // component={Paper}
       initialSortDir="desc"
-      initialSortField="ingestedAt"
+      initialSortField="timestamp"
       headerCells={headerCells}
       renderRow={(item: AoMessage, index) => (
         <EvalMessagesTableRow key={item.id} item={item} expandedByDefault={index === 0} />
